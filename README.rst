@@ -1,27 +1,35 @@
 ================
-get-pdf-metadata
+metadata-readers
 ================
-A pdf metadata extraction plugin for calibre.
+A collection of metadata reader plugins for calibre.
 
-This plugin is a replacement for the stock pdf metadata plugin, that parses the
-contents for arxiv identifiers. If one is found the the first pages, it is added
-in the Ids field.
+Plugins
+-------
+:pdf-metadata:
+   A pdf metadata extraction plugin for calibre. This plugin is a replacement
+   for the stock pdf metadata plugin, that parses the contents for arxiv
+   identifiers. If one is found the the first pages, it is added in the Ids
+   field.
+
+:djvu-metadata:
+   A djvu metadata extraction plugin for calibre. Extracts cover from djvu files.
 
 
 Dependencies
 ------------
-This plugin has two external dependencies:
-- pdftotext: for extracting content
-- pdftoppn: for getting the cover
+These plugins have two external dependencies:
+  - pdftotext: for extracting content
+  - pdftoppn: for getting the cover
+  - djvulibre: for manipulating djvu files
 
-Both programs are provided by the package ``poppler`` on Arch, ``poppler-utils``
-on Ubuntu, or maybe ``xpdf`` on windows (untested)
+``pdftotext`` and ``pdftopnm`` are both provided by the package ``poppler`` on
+Arch, ``poppler-utils`` on Ubuntu, or maybe ``xpdf`` on windows (untested)
 
 
 Installation
 ------------
 
-Just type::
+Just go to the plugin directory and type::
   
   make install
 
@@ -33,3 +41,4 @@ Links
 -----
 - http://www.foolabs.com/xpdf/download.html
 - http://calibre-ebook.com/
+- http://djvu.sourceforge.net/
