@@ -57,7 +57,7 @@ def get_arxiv_id(stream):
         with open(os.path.join(pdfpath, 'src.pdf'), 'wb') as f:
             shutil.copyfileobj(stream, f)
         try:
-            res = fork_job('.', 'get_arxiv_id_worker', (pdfpath))
+            res = fork_job('calibre_plugins.pdf_metadata.pdf', 'get_arxiv_id_worker', (pdfpath,))
         except WorkerError as e:
             prints(e.orig_tb)
             raise RuntimeError('Failed to run pdftotext')
@@ -82,6 +82,7 @@ class PDFMetadataReader2(MetadataReaderPlugin):
     def get_metadata(self, stream, ftype):
         if self.quick:
             mi = get_quick_metadata(stream)
+
         else:
             mi = get_metadata(stream, cover=True)
             arxiv_id = get_arxiv_id(stream)
