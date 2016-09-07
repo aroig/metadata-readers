@@ -17,6 +17,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
 import os
 import shutil
 import subprocess
@@ -36,13 +37,18 @@ def get_arxiv_id_worker(outputdir):
     way to pass unicode paths via command line arguments. This also ensures
     that if poppler crashes, no stale file handles are left for the original
     file, only for src.pdf.'''
-    import re
     os.chdir(outputdir)
 
     try:
         raw = subprocess.check_output(['pdftotext', '-f', '1', '-l', '2', 'src.pdf', '-'])
     except subprocess.CalledProcessError as e:
         prints('pdftotext errored out with return code: %d'%e.returncode)
+        return None
+
+    try:
+        raw = raw.decode('utf-8')
+    except UnicodeDecodeError:
+        prints('pdftotext returned no UTF-8 data')
         return None
 
     m = re.search("arXiv:([^\s]*)\s", raw)
