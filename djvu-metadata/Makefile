@@ -13,7 +13,7 @@ $(ZIP): $(SRC_FILES)
 .PHONY: clean zip install test
 
 clean:
-	rm -f *.zip 
+	rm -f *.zip
 
 zip: $(ZIP)
 
@@ -23,5 +23,8 @@ install: $(ZIP)
 uninstall:
 	calibre-customize --r $(PLUGIN_NAME)
 
-test: 
+calibre:
+	QT_AUTO_SCREEN_SCALE_FACTOR=0 calibre-debug -g
+
+test:
 	calibre-debug -e $(SRC)/test.py
