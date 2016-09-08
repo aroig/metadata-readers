@@ -79,7 +79,7 @@ def get_arxiv_metadata(stream, cover=True):
             raw = f.read().strip()
             if raw:
                 prints(raw)
-        if not info:
+        if info == None:
             raise ValueError('Could not read arxiv ID from PDF')
 
         covpath = os.path.join(pdfpath, 'cover.jpg')
