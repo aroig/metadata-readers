@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import re
 import shutil
 import subprocess
 
@@ -27,6 +28,7 @@ from calibre.customize import MetadataReaderPlugin
 from calibre.customize import MetadataWriterPlugin
 from calibre.ebooks.metadata.book.base import Metadata
 from calibre.utils.ipc.simple_worker import fork_job, WorkerError
+from calibre.ebooks.metadata import (MetaInformation, string_to_authors)
 
 
 def get_djvu_metadata_worker(outputdir, get_cover):
@@ -46,7 +48,7 @@ def get_djvu_metadata_worker(outputdir, get_cover):
     try:
         raw = raw.decode('utf-8')
     except UnicodeDecodeError:
-        prints('djvused returned no UTF-8 data')
+        prints('djvused returned non UTF-8 data')
         return None
 
     ret = {}
@@ -60,8 +62,9 @@ def get_djvu_metadata_worker(outputdir, get_cover):
     if get_cover:
         size = 1024
         try:
-            subprocess.check_call(['ddjvu', '-page=1', '-format=pnm', 'size=%dx%d' % (size, size), 'src.pdf', 'cover.pnm'])
-            subprocess.check_call(['pnmtopng', 'cover.pnm', 'cover.png'])
+            subprocess.check_call(['ddjvu', '-page=1', '-format=pnm', '-size=%dx%d' % (size, size), 'src.djvu', 'cover.pnm'])
+            with open("cover.jpg", "w") as fd:
+                subprocess.check_call(['pnmtojpeg', 'cover.pnm'], stdout=fd)
         except subprocess.CalledProcessError as e:
             prints('ddjvu errored out with return code: %d'%e.returncode)
 
@@ -76,7 +79,7 @@ def set_djvu_metadata_worker(self, outputdir, title, author):
     subprocess.check_output(['djvused', '-s', '-e', 'set-meta; %s' % '; '.join(metadata), 'src.djvu'])
 
 
-def get_djvu_metadata(outputdir, cover=True):
+def get_djvu_metadata(stream, cover=True):
     with TemporaryDirectory('_djvu_metadata_read') as djvupath:
         stream.seek(0)
         with open(os.path.join(djvupath, 'src.djvu'), 'wb') as f:
@@ -91,9 +94,9 @@ def get_djvu_metadata(outputdir, cover=True):
             raw = f.read().strip()
             if raw:
                 prints(raw)
-        if not info:
+        if info == None:
             raise ValueError('Could not read metadata from djvu')
-        covpath = os.path.join(pdfpath, 'cover.png')
+        covpath = os.path.join(djvupath, 'cover.jpg')
         cdata = None
         if cover and os.path.exists(covpath):
             with open(covpath, 'rb') as f:
@@ -108,7 +111,7 @@ def get_djvu_metadata(outputdir, cover=True):
     mi = MetaInformation(title, au)
 
     if cdata:
-        mi.cover_data = ('png', cdata)
+        mi.cover_data = ('jpg', cdata)
 
     return mi
 
