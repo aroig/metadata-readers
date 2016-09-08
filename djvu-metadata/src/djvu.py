@@ -39,7 +39,7 @@ def get_djvu_metadata_worker(outputdir, get_cover):
     try:
         raw = subprocess.check_output(['djvused', '-e', 'print-meta', 'src.djvu'])
 
-    except: subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:
         prints('djvused errored out with return code %d' % e.returncode)
         return None
 
@@ -60,7 +60,7 @@ def get_djvu_metadata_worker(outputdir, get_cover):
     if get_cover:
         size = 1024
         try:
-            subprocess.check_call(['ddjvu', '-page=1', '-format=tiff', 'size=%dx%d' % (size, size), 'src.pdf', 'cover.pnm'])
+            subprocess.check_call(['ddjvu', '-page=1', '-format=pnm', 'size=%dx%d' % (size, size), 'src.pdf', 'cover.pnm'])
             subprocess.check_call(['pnmtopng', 'cover.pnm', 'cover.png'])
         except subprocess.CalledProcessError as e:
             prints('ddjvu errored out with return code: %d'%e.returncode)

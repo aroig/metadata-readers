@@ -1,0 +1,1 @@
+import calibre_plugins.djvu_metadata as djvumeta
