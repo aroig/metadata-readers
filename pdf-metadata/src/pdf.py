@@ -30,7 +30,7 @@ from calibre.ebooks.metadata.pdf import get_metadata, get_quick_metadata
 from calibre.utils.ipc.simple_worker import fork_job, WorkerError
 
 
-def get_arxiv_id_worker(outputdir):
+def get_arxiv_id_worker(outputdir, get_cover):
     ''' Read info dict and cover from a pdf file named src.pdf in outputdir.
     Note that this function changes the cwd to outputdir and is therefore not
     thread safe. Run it using fork_job. This is necessary as there is no safe
@@ -51,30 +51,51 @@ def get_arxiv_id_worker(outputdir):
         prints('pdftotext returned no UTF-8 data')
         return None
 
+    if get_cover:
+        size = 1024
+        try:
+            subprocess.check_call(['pdftoppm', '-jpeg', '-singlefile', '-scale-to', str(size), 'src.pdf', 'cover'])
+        except subprocess.CalledProcessError as e:
+            prints('pdftoppm errored out with return code: %d'%e.returncode)
+
     m = re.search("arXiv:([^\s]*)\s", raw)
     if m:
         return m.group(1).strip()
     return None
 
 
-def get_arxiv_id(stream):
+def get_arxiv_metadata(stream, cover=True):
     with TemporaryDirectory('_pdf_metadata_read_arxiv') as pdfpath:
         stream.seek(0)
         with open(os.path.join(pdfpath, 'src.pdf'), 'wb') as f:
             shutil.copyfileobj(stream, f)
         try:
-            res = fork_job('calibre_plugins.pdf_metadata.pdf', 'get_arxiv_id_worker', (pdfpath,))
+            res = fork_job('calibre_plugins.pdf_metadata.pdf', 'get_arxiv_id_worker', (pdfpath, bool(cover)))
         except WorkerError as e:
             prints(e.orig_tb)
             raise RuntimeError('Failed to run pdftotext')
-        arxiv_id = res['result']
+        info = res['result']
         with open(res['stdout_stderr'], 'rb') as f:
             raw = f.read().strip()
             if raw:
                 prints(raw)
-        if not arxiv_id:
+        if not info:
             raise ValueError('Could not read arxiv ID from PDF')
-        return arxiv_id
+
+        covpath = os.path.join(pdfpath, 'cover.jpg')
+        cdata = None
+        if cover and os.path.exists(covpath):
+            with open(covpath, 'rb') as f:
+                cdata = f.read()
+
+    mi = get_metadata(stream, cover=False)
+    if info:
+        mi.set_identifier('arxiv', info)
+
+    if cdata:
+        mi.cover_data = ('jpg', cdata)
+
+    return mi
 
 
 class PDFMetadataReader2(MetadataReaderPlugin):
@@ -87,13 +108,10 @@ class PDFMetadataReader2(MetadataReaderPlugin):
 
     def get_metadata(self, stream, ftype):
         if self.quick:
-            mi = get_quick_metadata(stream)
+            mi = get_arxiv_metadata(stream, cover=False)
 
         else:
-            mi = get_metadata(stream, cover=True)
-            arxiv_id = get_arxiv_id(stream)
-            if arxiv_id:
-                mi.set_identifier('arxiv', arxiv_id)
+            mi = get_arxiv_metadata(stream, cover=True)
 
         mi.tags = []
         return mi
