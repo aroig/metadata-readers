@@ -39,6 +39,7 @@ def get_arxiv_id_worker(outputdir, get_cover):
     file, only for src.pdf.'''
     os.chdir(outputdir)
 
+    ret = {}
     try:
         raw = subprocess.check_output(['pdftotext', '-f', '1', '-l', '2', 'src.pdf', '-'])
     except subprocess.CalledProcessError as e:
@@ -60,8 +61,9 @@ def get_arxiv_id_worker(outputdir, get_cover):
 
     m = re.search("arXiv:([^\s]*)\s", raw)
     if m:
-        return m.group(1).strip()
-    return None
+        ret['arxiv_id'] = m.group(1).strip()
+
+    return ret
 
 
 def get_arxiv_metadata(stream, cover=True):
@@ -89,8 +91,10 @@ def get_arxiv_metadata(stream, cover=True):
                 cdata = f.read()
 
     mi = get_metadata(stream, cover=False)
-    if info:
-        mi.set_identifier('arxiv', info)
+    arxiv_id = info.get('arxiv_id', None)
+
+    if arxiv_id:
+        mi.set_identifier('arxiv', arxiv_id)
 
     if cdata:
         mi.cover_data = ('jpg', cdata)
