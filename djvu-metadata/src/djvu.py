@@ -94,7 +94,7 @@ def get_djvu_metadata(stream, cover=True):
             raw = f.read().strip()
             if raw:
                 prints(raw)
-        if info == None:
+        if info is None:
             raise ValueError('Could not read metadata from djvu')
         covpath = os.path.join(djvupath, 'cover.jpg')
         cdata = None
